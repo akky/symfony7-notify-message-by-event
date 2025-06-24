@@ -1,0 +1,32 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  symfony-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: sqlite, intl, mbstring, xml, zip
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Check coding standards (optional)
+        run: PHP_CS_FIXER_IGNORE_ENV=1 vendor/bin/php-cs-fixer fix --dry-run --diff
+
+      - name: Run tests (PHPUnit)
+        run: vendor/bin/phpunit
+
+      - name: Run static type checks (PHPStan)
+        run: vendor/bin/phpstan analyse src/ tests/
+
+      - name: Run code style latest (Rector)
+        run: vendor/bin/rector process src --dry-run
