@@ -2,8 +2,8 @@
 
 namespace App\Tests\Controller;
 
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Request;
 
 final class HomeControllerTest extends WebTestCase
 {

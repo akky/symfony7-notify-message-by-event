@@ -2,10 +2,10 @@
 
 namespace App\Tests\EventListener;
 
-use Psr\Log\LoggerInterface;
-use DateTimeImmutable;
 use App\EventListener\DynamicNotificationListener;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 class DynamicNotificationListenerTest extends TestCase

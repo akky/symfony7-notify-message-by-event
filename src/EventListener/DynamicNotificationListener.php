@@ -1,24 +1,23 @@
 <?php
+
 // This file has been renamed to DynamicNotificationListener.php. The old class name and logic have been migrated.
 
 namespace App\EventListener;
 
-use Symfony\Component\HttpFoundation\Request;
 use DateTimeImmutable;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Stopwatch\Stopwatch;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Class DynamicNotificationListener
+ * Class DynamicNotificationListener.
  *
  * This listener injects a notification message into the response content.
  * It looks for a specific HTML element in the response and replaces it with a notification message.
- *
- * @package App\EventListener
  */
 #[AsEventListener(event: KernelEvents::RESPONSE)]
 final readonly class DynamicNotificationListener
@@ -32,8 +31,9 @@ final readonly class DynamicNotificationListener
         private LoggerInterface $logger,
         private ?Stopwatch $stopwatch = null,
         #[Autowire('%dynamic_notification_listener.target_element_id%')]
-        private string $targetElementId = 'dynamic_notification'
-    ) {}
+        private string $targetElementId = 'dynamic_notification',
+    ) {
+    }
 
     /**
      * Handles the response event to inject a notification message.
@@ -59,22 +59,22 @@ final readonly class DynamicNotificationListener
             $now = new DateTimeImmutable();
 
             if (
-                !$this->isAllowedIp($request) ||
-                !$this->isAllowedUserAgent($request) ||
-                !$this->isWithinDatePeriod($now) ||
-                !$this->isAllowedPath($request)
+                !$this->isAllowedIp($request)
+                || !$this->isAllowedUserAgent($request)
+                || !$this->isWithinDatePeriod($now)
+                || !$this->isAllowedPath($request)
             ) {
                 return;
             }
 
-            $this->logger->info("DynamicNotificationListener: onResponseEvent called");
+            $this->logger->info('DynamicNotificationListener: onResponseEvent called');
 
             $response = $event->getResponse();
             $content = $response->getContent();
-            $placeholder = '<div id="' . $this->targetElementId . '"></div>';
+            $placeholder = '<div id="'.$this->targetElementId.'"></div>';
             if (!is_string($content) || !str_contains($content, $placeholder)) {
                 // some pages can have no notification message placeholder, so it is not an error
-                //$this->logger->debug("no $targetElementId found in response content");
+                // $this->logger->debug("no $targetElementId found in response content");
                 return;
             }
 
@@ -106,25 +106,29 @@ final readonly class DynamicNotificationListener
     public function isAllowedIp(Request $request): bool
     {
         $allowedIps = ['127.0.0.1', '::1'];
+
         return in_array($request->getClientIp(), $allowedIps, true);
     }
 
     public function isAllowedUserAgent(Request $request): bool
     {
         $ua = $request->headers->get('User-Agent', '');
-        return stripos((string) $ua, 'curl') === false;
+
+        return false === stripos((string) $ua, 'curl');
     }
 
     public function isWithinDatePeriod(DateTimeImmutable $now): bool
     {
         $start = new DateTimeImmutable('2025-06-01');
         $end = new DateTimeImmutable('2025-07-10 23:59:59');
+
         return $now >= $start && $now <= $end;
     }
 
     public function isAllowedPath(Request $request): bool
     {
         $excludedPaths = ['/login', '/about'];
+
         return !in_array($request->getPathInfo(), $excludedPaths, true);
     }
 }
