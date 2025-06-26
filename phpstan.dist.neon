@@ -4,7 +4,7 @@ includes:
     - vendor/phpstan/phpstan-symfony/extension.neon
     - vendor/phpstan/phpstan-symfony/rules.neon
 parameters:
-    level: 7
+    level: max
     reportUnmatchedIgnoredErrors: false
     paths:
         - bin/
@@ -13,4 +13,7 @@ parameters:
         - src/
         - tests/
     ignoreErrors:
-        # Ignore "No error to ignore" messages for comments meant for higher levels
+        # #Template attribute return type can not be handled well yet
+        -
+            identifier: missingType.iterableValue
+            path: 'src/Controller/*Controller.php'

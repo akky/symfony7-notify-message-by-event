@@ -1,0 +1,9 @@
+#dynamic_notification:not(:empty) {
+    background: #eaf6ff;
+    color: #0a3d62;
+    border: 1px solid #b2dffc;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 4px;
+    font-weight: bold;
+}

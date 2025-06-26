@@ -1,190 +1,167 @@
-# Setup Guide for PHP 8.4 + Symfony 7.3 + SQLite on WSL2
+# Symfony 7.3 + PHP 8.4 Minimal Demo: EventListener Response Rewrite & Modern Practices
 
-This guide covers setting up PHP 8.4, Symfony 7.3, SQLite on WSL2 (Ubuntu),
-managing the project with GitHub, and running tests with GitHub Actions.
+This repository demonstrates a minimal Symfony 7.3 web application using PHP
+8.4, focusing on:
 
-## Environment
+- **Response rewriting with EventListener**: Dynamically modify HTTP responses
+  using Symfony's event system.
+- **Latest language and framework features**: Leverage PHP 8.4 and Symfony 7.3's
+  newest syntax and attributes to reduce code and improve readability.
+- **Code quality assurance**: Enforce high code quality with PHPStan and Rector.
 
-- Windows 11 + WSL2 (Ubuntu)
+## Purpose
+
+The goal is to showcase how to build a clean, modern Symfony application with
+the smallest possible codebase, while demonstrating best practices for
+maintainability and static analysis.
+
+## Key Features
+
+- Uses an `EventListener` to rewrite the response content (e.g., inject a
+  notification message based on request or environment).
+- Makes use of constructor property promotion, attributes, and other PHP
+  8.4/Symfony 7.3 features.
+- Integrates PHPStan (static analysis) and Rector (automated refactoring) for
+  code quality.
+- Minimal dependencies and configuration for easy understanding and extension.
+
+## Requirements
+
 - PHP 8.4
-- Symfony 7.3
-- SQLite
+- Symfony 7.3 (latest)
+
+## Quick Start
+
+1. **Install dependencies**
+
+   ```bash
+   composer install
+   ```
+
+2. **Run the Symfony server**
+
+   ```bash
+   symfony server:start
+   ```
+   Visit http://localhost:8000
+
+3. **Run tests**
+
+   ```bash
+   php bin/phpunit
+   ```
+
+4. **Check code quality**
+
+   ```bash
+   vendor/bin/phpstan analyse src --level=max
+   vendor/bin/rector process src
+   ```
+
+## Code Quality Tools
+
+- **PHPStan**: Static analysis for catching bugs and enforcing strict types.
+- **Rector**: Automated code upgrades and refactoring.
+
+## GitHub Actions
+
+A sample workflow is included for CI with PHPStan, PHPUnit, and PHP-CS-Fixer.
+
+## About the Demo
+
+- The main logic is in `src/EventListener/DynamicNotificationListener.php`.
+- The listener rewrites the response to inject a notification message into a
+  placeholder div, using the latest PHP and Symfony features.
+- The codebase is intentionally minimal and readable, serving as a reference for
+  modern Symfony development.
+
+## Dynamic Notification Filtering
+
+The demo's `DynamicNotificationListener` can filter when to show the
+notification by inspecting several aspects of the HTTP request. This allows you
+to control exactly when and to whom the notification appears.
+
+### Sample Filter Methods
+
+- **isAllowedIp(Request $request): bool**
+  - Only show the notification for specific IP addresses (e.g., localhost for
+    development/testing).
+- **isAllowedUserAgent(Request $request): bool**
+  - Hide or show the notification based on the visitor's User-Agent (e.g., hide
+    for bots or CLI tools like curl).
+- **isWithinDatePeriod(DateTimeImmutable $now): bool**
+  - Only show the notification within a specific date/time window (e.g., for
+    scheduled maintenance or campaigns).
+- **isAllowedPath(Request $request): bool**
+  - Exclude the notification from certain routes or pages (e.g., don't show on
+    /login or /about).
+
+You can easily extend or customize these filters to fit your needs, such as
+filtering by user roles, cookies, headers, or any other request property.
+
+## Integrating the Dynamic Notification in Your Templates
+
+To display the dynamic notification injected by the
+`DynamicNotificationListener`, you need to add a placeholder `<div>` to your
+base Twig template (or any template you want the notification to appear in).
+
+### 1. Add the Notification Placeholder
+
+Insert the following line in your template, ideally just inside the `<body>` tag
+or wherever you want the notification to appear:
+
+```twig
+<div id="dynamic_notification"></div>
+```
+
+- The listener will automatically inject the notification message into this div
+  if the filters pass.
+- If the div is empty, no notification will be shown and the CSS will not apply
+  any styles.
+
+**Example (base.html.twig):**
+
+```twig
+<body>
+    <div id="dynamic_notification"></div>
+    {# ...rest of your layout... #}
+</body>
+```
+
+### 2. Customizing the CSS ID
+
+If you want to use a different CSS id for the notification box (e.g.,
+`my_custom_notification`), you need to:
+
+1. **Change the div id in your template:**
+   ```twig
+   <div id="my_custom_notification"></div>
+   ```
+2. **Update the listener configuration:**
+   - In `config/services.yaml`, set the `notification_div_id` argument for the
+     listener:
+     ```yaml
+     App\\EventListener\\DynamicNotificationListener:
+       arguments:
+         $notificationDivId: "my_custom_notification"
+     ```
+3. **Update your CSS selector:**
+   - In your CSS (e.g., `assets/styles/notification.css`), change the selector:
+     ```css
+     #my_custom_notification:not(:empty) {
+       /* ...styles... */
+     }
+     ```
+
+### 3. Notes
+
+- The notification will only appear if the listener's filters allow it for the
+  current request.
+- You can safely include the placeholder div in all templates; it will remain
+  empty if no notification is set.
+- For advanced use, you can move or style the notification box as needed—just
+  keep the id in sync between your template, listener config, and CSS.
 
 ---
 
-## 1. Install PHP 8.4
-
-```bash
-sudo add-apt-repository ppa:ondrej/php
-sudo apt update
-sudo apt install php8.4-cli php8.4-sqlite3 php8.4-curl php8.4-xml php8.4-mbstring php8.4-zip php8.4-intl php8.4-opcache
-```
-
-Verify PHP installation:
-
-```bash
-php -v
-```
-
----
-
-## 2. Install Composer
-
-```bash
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-```
-
-Verify Composer installation:
-
-```bash
-composer --version
-```
-
----
-
-## 3. Install Symfony CLI
-
-```bash
-curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh' | sudo -E bash
-sudo apt install symfony-cli
-```
-
-Verify Symfony CLI installation:
-
-```bash
-symfony -v
-```
-
----
-
-## 4. Create Symfony Project
-
-```bash
-symfony new my_project --version="7.3.*" --webapp
-cd my_project
-```
-
----
-
-## 5. Configure SQLite
-
-Edit `.env`:
-
-```env
-DATABASE_URL="sqlite:///%kernel.project_dir%/var/data_%kernel.environment%.db"
-# DATABASE_URL="postgresql://app:!ChangeMe!@127.0.0.1:5432/app?serverVersion=16&charset=utf8"
-```
-
-Create the database:
-
-```bash
-php bin/console doctrine:database:create
-```
-
----
-
-## 6. Run the Server
-
-```bash
-symfony server:start
-```
-
-Open `http://localhost:8000` in your browser to verify.
-
----
-
-## 7. Set up GitHub Repository
-
-Edit `.env.dev` to set a non-sensitive `APP_SECRET`:
-
-```env
-APP_SECRET="THIS_IS_FOR_DEV_SO_NOT_REALLY_SECRET"
-```
-
-Create a repository on GitHub and push your project:
-
-```bash
-git init
-git branch -M main
-git add .
-git commit -m "Initial commit"
-git remote add origin git@github.com:<username>/<repo-name>.git
-git push -u origin main
-```
-
----
-
-## 8. Configure GitHub Actions for Testing
-
-Install PHP-CS-Fixer:
-
-```bash
-composer require --dev friendsofphp/php-cs-fixer
-```
-
-Create `.github/workflows/ci.yml` in your project root:
-
-```yaml
-name: CI
-
-on: [push, pull_request]
-
-jobs:
-    symfony-tests:
-        runs-on: ubuntu-latest
-
-        steps:
-            - uses: actions/checkout@v4
-
-            - name: Set up PHP 8.4
-              uses: shivammathur/setup-php@v2
-              with:
-                  php-version: "8.4"
-                  extensions: sqlite, intl, mbstring, xml, zip
-                  coverage: none
-
-            - name: Install dependencies
-              run: composer install --prefer-dist --no-progress
-
-            - name: Check coding standards (optional)
-              run: PHP_CS_FIXER_IGNORE_ENV=1 vendor/bin/php-cs-fixer fix --dry-run --diff
-
-            - name: Run tests (PHPUnit)
-              run: vendor/bin/phpunit
-```
-
-Currently, PHP-CS-Fixer does not officially support PHP 8.4, thus
-`PHP_CS_FIXER_IGNORE_ENV=1` is set to bypass version checks temporarily.
-
-Commit and push your changes to trigger tests via GitHub Actions.
-
----
-
-## 9. Run PHPUnit Tests
-
-Symfony 7.3 includes PHPUnit 12 by default:
-
-```bash
-php bin/phpunit
-```
-
-Ensure all tests pass successfully.
-
----
-
-## 10. Run PHPStan check
-
-```bash
-composer require --dev phpstan/phpstan
-composer require --dev phpstan/phpstan-doctrine
-composer require --dev phpstan/phpstan-symfony
-vendor/bin/phpstan analyse src --level=max
-```
-
-if you encounter issues, you may need to fix them, ignore them on /phpstan.dist.neon config , or lower the level.
-
----
-
-Your Symfony setup on WSL2 is now complete, including GitHub management and
-automated testing with GitHub Actions.
+Feel free to fork, adapt, or use as a reference for your own Symfony projects!
