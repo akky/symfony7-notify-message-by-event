@@ -15,17 +15,16 @@ final class HomeController extends AbstractController
      */
     public function index(): array
     {
-        return [
-            'controller_name' => 'HomeController',
-        ];
+        return [];
     }
 
     #[Route('/about', name: 'app_about')]
     #[Template('home/about.html.twig')]
+    /**
+     * @return array<string, string>
+     */
     public function about(): array
     {
-        return [
-            'controller_name' => 'HomeController',
-        ];
+        return [];
     }
 }

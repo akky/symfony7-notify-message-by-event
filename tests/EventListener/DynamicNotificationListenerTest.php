@@ -43,7 +43,7 @@ class DynamicNotificationListenerTest extends TestCase
         $listener = $this->getListener();
         $inPeriod = new DateTimeImmutable('2025-06-15');
         $before = new DateTimeImmutable('2025-05-31');
-        $after = new DateTimeImmutable('2025-07-11');
+        $after = new DateTimeImmutable('2030-07-11');
         $this->assertTrue($listener->isWithinDatePeriod($inPeriod));
         $this->assertFalse($listener->isWithinDatePeriod($before));
         $this->assertFalse($listener->isWithinDatePeriod($after));

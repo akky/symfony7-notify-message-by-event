@@ -120,7 +120,7 @@ final readonly class DynamicNotificationListener
     public function isWithinDatePeriod(DateTimeImmutable $now): bool
     {
         $start = new DateTimeImmutable('2025-06-01');
-        $end = new DateTimeImmutable('2025-07-10 23:59:59');
+        $end = new DateTimeImmutable('2027-07-10 23:59:59');
 
         return $now >= $start && $now <= $end;
     }
